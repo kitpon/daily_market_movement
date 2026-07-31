@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Market Movement | UOB Kay Hian</title>
+<style>
+:root{
+  --ink:#3F4C54;          /* dark grey  */
+  --red:#C33B32;          /* red        */
+  --vino:#760E3A;         /* vino       */
+  --gold:#A89983;         /* gold       */
+  --steel:#DBE0E4;        /* steel grey */
+  --up:#1E7A5F;           /* added: down is --red, so up needs a partner */
+  --bg:#FFFFFF;
+  --bg-alt:#F5F7F8;
+  --line:#E2E7EA;
+  --line-strong:#C7D0D5;
+  --muted:#7A868D;
+  --radius:6px;
+  --mono:"SF Mono",ui-monospace,"Cascadia Mono","Consolas","Roboto Mono",monospace;
+  --sans:"Inter","Segoe UI",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--sans);
+  background:var(--bg-alt);
+  color:var(--ink);
+  font-size:13px;
+  -webkit-font-smoothing:antialiased;
+}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.up{color:var(--up)}
+.dn{color:var(--red)}
+.fl{color:var(--muted)}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;gap:16px;
+  padding:10px 20px;
+  background:var(--bg);
+  border-bottom:2px solid var(--ink);
+}
+header img{height:34px;width:auto;display:block}
+.title-block{line-height:1.25}
+.title-block h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.02em}
+.title-block .sub{font-size:11px;color:var(--muted)}
+.header-spacer{flex:1}
+.header-meta{
+  display:flex;gap:18px;align-items:center;
+  font-size:11px;color:var(--muted);text-align:right;
+}
+.header-meta b{display:block;font-size:13px;color:var(--ink);font-family:var(--mono)}
+
+/* ---------- shell ---------- */
+.shell{display:flex;align-items:flex-start;min-height:calc(100vh - 56px)}
+
+/* ---------- sidebar ---------- */
+aside{
+  width:196px;flex:0 0 196px;
+  position:sticky;top:56px;
+  max-height:calc(100vh - 56px);overflow-y:auto;
+  background:var(--bg);
+  border-right:1px solid var(--line);
+  padding:12px 0 24px;
+}
+.aside-label{
+  font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);padding:0 14px 8px;
+}
+.daybtn{
+  display:block;width:100%;text-align:left;cursor:pointer;
+  background:none;border:0;border-left:3px solid transparent;
+  padding:8px 14px;font-family:inherit;color:inherit;
+  border-bottom:1px solid var(--line);
+}
+.daybtn:hover{background:var(--bg-alt)}
+.daybtn.active{background:#EEF2F4;border-left-color:var(--vino)}
+.daybtn .d1{font-size:13px;font-weight:600;font-family:var(--mono)}
+.daybtn .d1 .dow{font-weight:400;color:var(--muted);font-size:11px;margin-left:5px}
+.daybtn .d2{font-size:10.5px;color:var(--muted);font-family:var(--mono);margin-top:3px}
+.breadth{display:flex;height:3px;margin-top:5px;border-radius:2px;overflow:hidden;background:var(--steel)}
+.breadth i{display:block;height:100%}
+
+/* ---------- main ---------- */
+main{flex:1;min-width:0;padding:16px 20px 60px}
+
+.strip{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;margin-bottom:14px;
+}
+.stat{background:var(--bg);padding:9px 12px}
+.stat .k{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font-size:17px;font-weight:600;font-family:var(--mono);margin-top:2px}
+.stat .u{font-size:10px;color:var(--muted);font-weight:400;margin-left:3px}
+
+/* ---------- tabs ---------- */
+nav.tabs{display:flex;gap:2px;border-bottom:2px solid var(--ink);margin-bottom:14px;flex-wrap:wrap}
+.tab{
+  cursor:pointer;border:0;background:none;font-family:inherit;font-size:12px;font-weight:600;
+  color:var(--muted);padding:8px 14px;border-radius:var(--radius) var(--radius) 0 0;
+}
+.tab:hover{background:var(--bg);color:var(--ink)}
+.tab.active{background:var(--ink);color:#fff}
+.tab .badge{font-weight:400;opacity:.75;font-size:10.5px;margin-left:5px}
+
+/* ---------- panels & tables ---------- */
+.panel{
+  background:var(--bg);border:1px solid var(--line);
+  border-radius:var(--radius);margin-bottom:16px;overflow:hidden;
+}
+.panel > h2{
+  margin:0;padding:9px 13px;font-size:12px;font-weight:700;letter-spacing:.03em;
+  background:var(--ink);color:#fff;
+  display:flex;align-items:center;gap:10px;
+}
+.panel > h2 .note{font-weight:400;font-size:10.5px;opacity:.8;margin-left:auto;text-align:right}
+.panel.vino > h2{background:var(--vino)}
+.panel.gold > h2{background:var(--gold);color:#2A2118}
+.scroll{overflow-x:auto}
+
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
+thead th{
+  position:sticky;top:0;z-index:2;
+  background:var(--steel);color:var(--ink);
+  font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+  padding:6px 8px;text-align:right;white-space:nowrap;
+  border-bottom:1px solid var(--line-strong);
+  cursor:pointer;user-select:none;
+}
+thead th:hover{background:#CBD3D8}
+thead th.nosort{cursor:default}
+thead th.nosort:hover{background:var(--steel)}
+thead th.l{text-align:left}
+thead th .arrow{opacity:.45;font-size:9px;margin-left:2px}
+thead th.sorted{background:var(--ink);color:#fff}
+thead th.sorted .arrow{opacity:1}
+tbody td{
+  padding:4px 8px;text-align:right;white-space:nowrap;
+  border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-variant-numeric:tabular-nums;
+}
+tbody td.l{text-align:left;font-family:var(--sans)}
+tbody tr:nth-child(even){background:#FAFBFC}
+tbody tr:hover{background:#EEF2F4}
+td.rank{color:var(--muted);font-size:11px;width:30px}
+td.sym{font-weight:700;font-family:var(--mono);letter-spacing:.02em}
+td.name{color:var(--muted);font-size:11px;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.empty{padding:26px 14px;text-align:center;color:var(--muted);font-size:12px}
+
+/* ---------- range bar ---------- */
+.rb{position:relative;height:16px;width:150px;display:inline-block;vertical-align:middle}
+.rb .track{position:absolute;top:7px;left:0;right:0;height:3px;background:var(--steel);border-radius:2px}
+.rb .fill{position:absolute;top:5.5px;height:6px;border-radius:2px;opacity:.85}
+.rb .close{position:absolute;top:1px;width:2px;height:14px;background:var(--ink);border-radius:1px}
+.rb .prev{position:absolute;top:3px;width:1px;height:10px;background:var(--gold)}
+.rb-wrap{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.rb-ends{font-size:9.5px;color:var(--muted);font-family:var(--mono);width:38px}
+.rb-ends.r{text-align:left}
+
+/* ---------- split layout (sub tables: 1-15 left, 16-30 right) ---------- */
+.split{display:grid;grid-template-columns:1fr 1fr}
+.split > div{overflow-x:auto;min-width:0}
+.split > div + div{border-left:1px solid var(--line-strong)}
+.split td,.split th{padding-left:6px;padding-right:6px}
+@media (max-width:1180px){
+  .split{grid-template-columns:1fr}
+  .split > div + div{border-left:0;border-top:1px solid var(--line-strong)}
+}
+
+/* ---------- sector strip ---------- */
+.sectors{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);padding:1px}
+.sec{background:var(--bg);padding:6px 10px;flex:1 1 132px;min-width:132px}
+.sec .n{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sec .v{font-family:var(--mono);font-size:13px;font-weight:600}
+.sec .bar{height:3px;margin-top:4px;background:var(--steel);border-radius:2px;overflow:hidden}
+.sec .bar i{display:block;height:100%}
+
+/* ---------- flow grid ---------- */
+.flowbanner{
+  background:#FBF3E4;border-bottom:1px solid #E8D9B8;color:#6B5320;
+  padding:7px 13px;font-size:11.5px;
+}
+td.cell{font-size:11px;padding:3px 6px;min-width:56px}
+td.cell.asof{box-shadow:inset 1px 0 0 var(--ink),inset -1px 0 0 var(--ink)}
+thead th.asof{background:var(--ink);color:#fff}
+.legend{display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--muted);padding:7px 13px;border-top:1px solid var(--line)}
+.legend .sw{width:15px;height:11px;border-radius:2px;display:inline-block}
+
+footer{padding:14px 20px 30px;font-size:10.5px;color:var(--muted);line-height:1.7}
+footer b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header>
+  <img id="logo" alt="UOB Kay Hian">
+  <div class="title-block">
+    <h1>Daily Market Movement</h1>
+    <div class="sub">SET · top turnover, volume surge &amp; NVDR flow</div>
+  </div>
+  <div class="header-spacer"></div>
+  <div class="header-meta">
+    <div>Trading day<b id="hdr-date">—</b></div>
+    <div>Turnover (M฿)<b id="hdr-turnover">—</b></div>
+    <div>Built<b id="hdr-built">—</b></div>
+  </div>
+</header>
+
+<div class="shell">
+  <aside>
+    <div class="aside-label">Trading day</div>
+    <div id="daylist"></div>
+  </aside>
+
+  <main>
+    <div class="strip" id="strip"></div>
+    <nav class="tabs" id="tabs"></nav>
+    <div id="view"></div>
+    <footer id="footer"></footer>
+  </main>
+</div>
+
+<script>
+const LOGO = /*__LOGO__*/'';
+const DATA = /*__DATA__*/null;
+
+/* ------------------------------------------------------------------ format */
+const nf = (v, d = 2) => v === null || v === undefined
+  ? '<span class="fl">–</span>'
+  : v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const ni = v => v === null || v === undefined
+  ? '<span class="fl">–</span>'
+  : Math.round(v).toLocaleString('en-US');
+const cls = v => v === null || v === undefined ? 'fl' : v > 0 ? 'up' : v < 0 ? 'dn' : 'fl';
+const sgn = (v, d = 2) => v === null || v === undefined
+  ? '<span class="fl">–</span>'
+  : (v > 0 ? '+' : '') + v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ------------------------------------------------------------------ state */
+let day = DATA.dates[0];
+let tab = 'main';
+const sortState = {};   // tableKey -> {col, dir}
+
+/* ------------------------------------------------------------------ table engine */
+/* cols: {t:title, k:index into row, f:formatter, cl:extra class, s:sortable(default true), a:'l'} */
+function renderTable(key, cols, rows, offset) {
+  const st = sortState[key];
+  const head = cols.map((c, i) => {
+    const sortable = c.s !== false;
+    const on = st && st.col === i;
+    const arrow = on ? (st.dir === 'asc' ? '▲' : '▼') : (sortable ? '⇅' : '');
+    return `<th class="${c.a === 'l' ? 'l ' : ''}${c.hcl ? c.hcl + ' ' : ''}${sortable ? '' : 'nosort '}${on ? 'sorted' : ''}"
+      ${sortable ? `data-t="${key}" data-c="${i}"` : ''}>${esc(c.t)}<span class="arrow">${arrow}</span></th>`;
+  }).join('');
+
+  const trs = rows.map((r, i) => '<tr>' + cols.map(c =>
+    `<td class="${c.cl || ''}${c.a === 'l' ? ' l' : ''}">${c.f(r, i + offset)}</td>`).join('') + '</tr>').join('');
+
+  return `<table><thead><tr>${head}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+function table(key, cols, rows, opts = {}) {
+  if (!rows.length) return `<div class="empty">${opts.emptyMsg || 'No rows for this day.'}</div>`;
+
+  const st = sortState[key];
+  let body = rows.slice();
+  if (st) {
+    const c = cols[st.col];
+    body.sort((A, B) => {
+      const a = A[c.k], b = B[c.k];
+      if (a === null || a === undefined) return 1;
+      if (b === null || b === undefined) return -1;
+      const d = typeof a === 'string' ? a.localeCompare(b) : a - b;
+      return st.dir === 'asc' ? d : -d;
+    });
+  }
+
+  /* split: mirror the reference layout — first half left, second half right */
+  if (opts.split && body.length > 6) {
+    const half = Math.ceil(body.length / 2);
+    return `<div class="split">
+      <div>${renderTable(key, cols, body.slice(0, half), 0)}</div>
+      <div>${renderTable(key, cols, body.slice(half), half)}</div>
+    </div>`;
+  }
+  return `<div class="scroll">${renderTable(key, cols, body, 0)}</div>`;
+}
+
+const rankCol = { t: 'No.', f: (r, i) => i + 1, cl: 'rank', s: false };
+
+/* ------------------------------------------------------------------ range bar */
+function rangeBar(r) {
+  const [, , close, , pct, open, high, low, prev] = r;
+  if (high === null || low === null || high === low) {
+    return `<div class="rb-wrap"><span class="rb-ends">${nf(low)}</span>
+      <span class="rb"><span class="track"></span></span>
+      <span class="rb-ends r">${nf(high)}</span></div>`;
+  }
+  const p = v => Math.max(0, Math.min(100, (v - low) / (high - low) * 100));
+  const a = p(open), b = p(close);
+  const lo = Math.min(a, b), w = Math.max(Math.abs(b - a), 1.2);
+  const col = pct > 0 ? 'var(--up)' : pct < 0 ? 'var(--red)' : 'var(--gold)';
+  const prevTick = (prev !== null && prev >= low && prev <= high)
+    ? `<span class="prev" style="left:${p(prev)}%" title="Prev close ${nf(prev)}"></span>` : '';
+  return `<div class="rb-wrap" title="L ${nf(low)} · O ${nf(open)} · C ${nf(close)} · H ${nf(high)}">
+    <span class="rb-ends">${nf(low)}</span>
+    <span class="rb">
+      <span class="track"></span>
+      <span class="fill" style="left:${lo}%;width:${w}%;background:${col}"></span>
+      ${prevTick}
+      <span class="close" style="left:calc(${b}% - 1px)"></span>
+    </span>
+    <span class="rb-ends r">${nf(high)}</span></div>`;
+}
+
+/* ------------------------------------------------------------------ views */
+function viewMain(d) {
+  /* main row: 0 sym 1 sector 2 close 3 chg 4 pct 5 open 6 high 7 low 8 prev 9 vol 10 val 11 pctmkt */
+  const mainCols = [
+    rankCol,
+    { t: 'Symbol', k: 0, f: r => esc(r[0]), cl: 'sym', a: 'l' },
+    { t: 'Sector', k: 1, f: r => esc(r[1]), cl: 'name', a: 'l' },
+    { t: 'Last', k: 2, f: r => `<span class="${cls(r[4])}">${nf(r[2])}</span>` },
+    { t: 'Chg', k: 3, f: r => `<span class="${cls(r[3])}">${sgn(r[3])}</span>` },
+    { t: '%Chg', k: 4, f: r => `<span class="${cls(r[4])}">${sgn(r[4])}</span>` },
+    { t: 'Open', k: 5, f: r => nf(r[5]) },
+    { t: 'Prev', k: 8, f: r => nf(r[8]) },
+    { t: 'Volume', k: 9, f: r => ni(r[9]) },
+    { t: 'Value (M฿)', k: 10, f: r => nf(r[10], 1) },
+    { t: '%Mkt', k: 11, f: r => nf(r[11]) },
+    { t: 'Intraday range (Low – High)', k: 4, f: rangeBar, s: false },
+  ];
+
+  /* impact row: 0 sym 1 impact 2 last 3 pct 4 prev 5 open 6 high 7 low 8 pctmkt 9 vol 10 val */
+  const impCols = [
+    rankCol,
+    { t: 'Symbol', k: 0, f: r => esc(r[0]), cl: 'sym', a: 'l' },
+    { t: 'Impact', k: 1, f: r => `<span class="${cls(r[1])}">${sgn(r[1], 4)}</span>` },
+    { t: 'Last', k: 2, f: r => `<span class="${cls(r[3])}">${nf(r[2])}</span>` },
+    { t: '%Chg', k: 3, f: r => `<span class="${cls(r[3])}">${sgn(r[3])}</span>` },
+    { t: 'Prev', k: 4, f: r => nf(r[4]) },
+    { t: 'Open', k: 5, f: r => nf(r[5]) },
+    { t: 'High', k: 6, f: r => nf(r[6]) },
+    { t: 'Low', k: 7, f: r => nf(r[7]) },
+    { t: '%Mkt', k: 8, f: r => nf(r[8]) },
+    { t: 'Acc Vol', k: 9, f: r => ni(r[9]) },
+    { t: 'Acc Val (M฿)', k: 10, f: r => nf(r[10], 1) },
+  ];
+
+  const secMax = Math.max(...d.sectors.map(s => Math.abs(s[1])), 0.0001);
+  const sectors = d.sectors.map(([n, v]) => `
+    <div class="sec">
+      <div class="n" title="${esc(n)}">${esc(n)}</div>
+      <div class="v ${cls(v)}">${sgn(v, 3)}</div>
+      <div class="bar"><i style="width:${Math.abs(v) / secMax * 100}%;background:${v >= 0 ? 'var(--up)' : 'var(--red)'}"></i></div>
+    </div>`).join('');
+
+  return `
+  <section class="panel">
+    <h2>Top 20 by trading value
+      <span class="note">Range bar: bar spans the day's low–high · fill = open→close · dark tick = close · gold tick = prev close</span></h2>
+    ${table('main', mainCols, d.main)}
+  </section>
+
+  <section class="panel">
+    <h2>Impact gainers<span class="note">contribution to the index, est. points</span></h2>
+    ${table('gain', impCols, d.gainers)}
+  </section>
+
+  <section class="panel vino">
+    <h2>Impact losers<span class="note">contribution to the index, est. points</span></h2>
+    ${table('lose', impCols, d.losers)}
+  </section>
+
+  <section class="panel gold">
+    <h2>Sector impact<span class="note">sum of constituent impact, est. index points</span></h2>
+    <div class="sectors">${sectors}</div>
+  </section>`;
+}
+
+function viewSub(d, n) {
+  const key = 'sub' + n;
+  const th = DATA.subThresholds[n - 1];
+  /* sub row: 0 sym 1 avgvol5 2 tradevol 3 cmpr 4 last 5 pct 6 avgval5mb 7 valmb */
+  const cols = [
+    rankCol,
+    { t: 'Symbol', k: 0, f: r => esc(r[0]), cl: 'sym', a: 'l' },
+    { t: 'Avg Vol5', k: 1, f: r => ni(r[1]) },
+    { t: 'Trade Vol', k: 2, f: r => ni(r[2]) },
+    { t: '%CMPR', k: 3, f: r => `<b>${nf(r[3])}</b>` },
+    { t: 'Last', k: 4, f: r => `<span class="${cls(r[5])}">${nf(r[4])}</span>` },
+    { t: '%Chg', k: 5, f: r => `<span class="${cls(r[5])}">${sgn(r[5])}</span>` },
+    { t: 'Avg Val5 (M฿)', k: 6, f: r => nf(r[6], 1) },
+    { t: 'Value (M฿)', k: 7, f: r => nf(r[7], 1) },
+  ];
+  const rows = d[key];
+  return `
+  <section class="panel">
+    <h2>Sub table ${n} — Avg trading value 5D ≥ ${th} M฿
+      <span class="note">ranked by %CMPR = trade volume ÷ 5-day average volume × 100 · top ${rows.length}</span></h2>
+    ${table(key, cols, rows, {
+      split: true,
+      emptyMsg: `No stock met the ≥ ${th} M฿ average-value filter on this day.`
+    })}
+  </section>`;
+}
+
+function flowTable(key, title, rows, d, negative) {
+  if (!rows.length) return `<section class="panel${negative ? ' vino' : ''}"><h2>${title}</h2>
+    <div class="empty">No NVDR data available in this 10-day window.</div></section>`;
+
+  let max = 0;
+  rows.forEach(r => r[2].forEach(v => { if (v !== null) max = Math.max(max, Math.abs(v)); }));
+  max = max || 1;
+
+  const asOfCol = d.flowDates.indexOf(d.flowAsOf);
+  const cols = [
+    rankCol,
+    { t: 'Symbol', k: 0, f: r => esc(r[0]), cl: 'sym', a: 'l' },
+    { t: 'Sector', k: 1, f: r => esc(r[1]), cl: 'name', a: 'l' },
+  ];
+  d.flowLabels.forEach((lab, i) => {
+    cols.push({
+      t: lab, k: null, s: false,
+      cl: 'cell' + (i === asOfCol ? ' asof' : ''),
+      hcl: i === asOfCol ? 'asof' : '',
+      f: r => {
+        const v = r[2][i];
+        if (v === null) return '<span class="fl">–</span>';
+        const alpha = Math.min(0.55, Math.abs(v) / max * 0.55);
+        const bg = v > 0 ? `rgba(30,122,95,${alpha})` : `rgba(195,59,50,${alpha})`;
+        return `<span style="display:block;margin:-3px -6px;padding:3px 6px;background:${bg}"
+          class="${cls(v)}">${nf(v, 1)}</span>`;
+      }
+    });
+  });
+
+  const asOfIdx = asOfCol;
+  return `
+  <section class="panel${negative ? ' vino' : ''}">
+    <h2>${title}<span class="note">net NVDR value, M฿ · ranked on ${esc(DATA.dateLabels[d.flowAsOf] || d.flowAsOf)}
+      ${asOfIdx >= 0 ? '(column ' + (asOfIdx + 1) + ' of ' + d.flowLabels.length + ')' : ''}</span></h2>
+    ${table(key, cols, rows)}
+    <div class="legend">
+      <span class="sw" style="background:rgba(30,122,95,.55)"></span> net buy
+      <span class="sw" style="background:rgba(195,59,50,.55)"></span> net sell
+      <span>· shading scaled to the largest absolute flow in this table · oldest day left, most recent right</span>
+    </div>
+  </section>`;
+}
+
+function viewFlow(d) {
+  const banner = d.flowAsOf === null
+    ? `<div class="panel"><div class="flowbanner">No NVDR buy/sell data exists anywhere in the 10 trading days ending ${esc(DATA.dateLabels[day])}.</div></div>`
+    : d.flowStale
+      ? `<div class="panel"><div class="flowbanner"><b>NVDR not yet published for ${esc(DATA.dateLabels[day])}.</b>
+         Ranking is taken from the most recent day in the window that has data — ${esc(DATA.dateLabels[d.flowAsOf] || d.flowAsOf)}.
+         The 10-day grid below still shows every day that does have data.</div></div>`
+      : '';
+  return banner
+    + flowTable('fbuy', 'Top 20 NVDR net BUY', d.flowBuy, d, false)
+    + flowTable('fsell', 'Top 20 NVDR net SELL', d.flowSell, d, true);
+}
+
+/* ------------------------------------------------------------------ render */
+function renderSidebar() {
+  document.getElementById('daylist').innerHTML = DATA.dates.map(k => {
+    const s = DATA.days[k].summary;
+    const tot = s.adv + s.dec + s.unch || 1;
+    return `<button class="daybtn ${k === day ? 'active' : ''}" data-day="${k}">
+      <div class="d1">${esc(DATA.dateShort[k])}<span class="dow">${esc(DATA.dateDow[k])}</span></div>
+      <div class="d2">${ni(s.turnover)} M฿ · <span class="${cls(s.impact)}">${sgn(s.impact, 1)}</span> pt</div>
+      <div class="breadth">
+        <i style="width:${s.adv / tot * 100}%;background:var(--up)"></i>
+        <i style="width:${s.unch / tot * 100}%;background:var(--gold)"></i>
+        <i style="width:${s.dec / tot * 100}%;background:var(--red)"></i>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+function renderTabs(d) {
+  const defs = [
+    ['main', 'Main table', ''],
+    ['sub1', 'Sub table 1', '≥20 M฿'],
+    ['sub2', 'Sub table 2', '≥50 M฿'],
+    ['sub3', 'Sub table 3', '≥100 M฿'],
+    ['flow', 'NVDR buy / sell', d.flowStale ? '⚠' : ''],
+  ];
+  document.getElementById('tabs').innerHTML = defs.map(([k, t, b]) =>
+    `<button class="tab ${k === tab ? 'active' : ''}" data-tab="${k}">${t}${b ? `<span class="badge">${b}</span>` : ''}</button>`
+  ).join('');
+}
+
+function renderStrip(d) {
+  const s = d.summary;
+  const tot = s.adv + s.dec + s.unch || 1;
+  document.getElementById('strip').innerHTML = `
+    <div class="stat"><div class="k">Turnover</div><div class="v">${ni(s.turnover)}<span class="u">M฿</span></div></div>
+    <div class="stat"><div class="k">Market cap</div><div class="v">${nf(s.mcap, 2)}<span class="u">฿tn</span></div></div>
+    <div class="stat"><div class="k">Est. index impact</div><div class="v ${cls(s.impact)}">${sgn(s.impact, 2)}<span class="u">pt</span></div></div>
+    <div class="stat"><div class="k">Advance</div><div class="v up">${s.adv}</div></div>
+    <div class="stat"><div class="k">Decline</div><div class="v dn">${s.dec}</div></div>
+    <div class="stat"><div class="k">Unchanged</div><div class="v fl">${s.unch}</div></div>
+    <div class="stat"><div class="k">Traded names</div><div class="v">${s.names}</div></div>
+    <div class="stat"><div class="k">A/D ratio</div><div class="v">${nf(s.dec ? s.adv / s.dec : 0, 2)}</div></div>`;
+  void tot;
+}
+
+function render() {
+  const d = DATA.days[day];
+  renderSidebar();
+  renderTabs(d);
+  renderStrip(d);
+
+  document.getElementById('hdr-date').textContent = DATA.dateLabels[day];
+  document.getElementById('hdr-turnover').textContent = Math.round(d.summary.turnover).toLocaleString('en-US');
+  document.getElementById('hdr-built').textContent = DATA.generated;
+
+  document.getElementById('view').innerHTML =
+    tab === 'main' ? viewMain(d) :
+    tab === 'flow' ? viewFlow(d) :
+    viewSub(d, +tab.slice(3));
+
+  document.getElementById('footer').innerHTML = `
+    <b>Definitions.</b> %CMPR = trade volume ÷ average volume of the previous 5 trading days × 100.
+    Avg Val5 = average trading value of the previous 5 trading days.
+    Impact = %change × (market cap ÷ total market cap) × ${nf(DATA.setLevel)}, an estimate in SET index points
+    using full (not free-float) market cap, so it is indicative rather than the exchange's official figure.
+    NVDR net = NVDR buy value − NVDR sell value.<br>
+    <b>Coverage.</b> Indices, warrants and preferred shares are excluded. NVDR is only reported for a subset of
+    listed names and is published with a lag, so the most recent trading days may have no NVDR figures.<br>
+    <b>Source.</b> set_stocks.duckdb · generated ${esc(DATA.generated)} · UOB Kay Hian Securities (Thailand).`;
+}
+
+/* ------------------------------------------------------------------ events */
+document.addEventListener('click', e => {
+  const dayBtn = e.target.closest('.daybtn');
+  if (dayBtn) { day = dayBtn.dataset.day; render(); window.scrollTo({ top: 0 }); return; }
+
+  const tabBtn = e.target.closest('.tab');
+  if (tabBtn) { tab = tabBtn.dataset.tab; render(); return; }
+
+  const th = e.target.closest('th[data-t]');
+  if (th) {
+    const k = th.dataset.t, c = +th.dataset.c, cur = sortState[k];
+    sortState[k] = (cur && cur.col === c && cur.dir === 'desc')
+      ? { col: c, dir: 'asc' }
+      : { col: c, dir: 'desc' };
+    render();
+  }
+});
+
+document.getElementById('logo').src = LOGO;
+render();
+</script>
+</body>
+</html>

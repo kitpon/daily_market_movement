@@ -1,0 +1,11 @@
+# Internal working files — not for public repo
+.claude/
+New folder/
+instruction.txt
+color_style.txt
+Daily market movement.pdf
+
+# Python
+__pycache__/
+*.pyc
+.venv/
